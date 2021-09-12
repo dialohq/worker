@@ -124,6 +124,7 @@ test("backfills if identifier already registered (25h)", () =>
     {
       const known = await getKnown(pgPool);
       expect(known).toHaveLength(1);
+      const lastExecution = known[0].last_execution!.toISOString();
       expect(known[0].identifier).toEqual("do_it");
       expect(known[0].known_since).not.toBeNull();
       if (!known[0].last_execution) {
@@ -143,6 +144,22 @@ test("backfills if identifier already registered (25h)", () =>
       expect(jobs.length).toBeGreaterThanOrEqual(6);
       expect(jobs.length).toBeLessThanOrEqual(7);
       expect(jobs.every((j) => j.task_identifier === "do_it")).toBe(true);
+      const knownSince = known[0].known_since!.toISOString();
+      expect(
+        jobs.every(
+          (j) => (j.payload as any)["_cron"]["knownSince"] == knownSince,
+        ),
+      ).toBe(true);
+      const lastExecutionString2 = (jobs[0].payload as any)["_cron"][
+        "lastExecution"
+      ];
+      console.log(lastExecution, lastExecutionString2, lastExecution == lastExecutionString2);
+      expect(
+        jobs.every(
+          (j) =>
+            (j.payload as any)["_cron"]["lastExecution"] == lastExecution,
+        ),
+      ).toBe(true);
     }
   }));
 
