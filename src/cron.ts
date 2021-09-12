@@ -99,7 +99,10 @@ async function scheduleCronJobs(
   // in `specs`.
   await pgPool.query(
     `
-      with specs as (
+      with known_crontabs as (
+
+      ),
+      specs as (
         select
           index,
           (json->>'identifier')::text as identifier,
@@ -108,7 +111,7 @@ async function scheduleCronJobs(
               '_cron', jsonb_build_object(
                 'ts', $3::text,
                 'backfilled', $4::boolean,
-                'lastExecution', to_char(
+                'lastOnTimeExecution', to_char(
                   known_crontabs.last_execution at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
                 ),
                 'knownSince', to_char(
@@ -123,7 +126,6 @@ async function scheduleCronJobs(
         from 
         	json_array_elements($1::json) with ordinality AS entries (json, index)
         left join ${escapedWorkerSchema}.known_crontabs as known_crontabs ON (known_crontabs.identifier = (json->>'identifier')::text)
-        	
       ),
       locks as (
         insert into ${escapedWorkerSchema}.known_crontabs (identifier, known_since, last_execution)
